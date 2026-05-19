@@ -10,8 +10,8 @@ func main() {
 	logger := logging.New()
 
 	logger.Info().
-		Str("Verison", version.Version).
-		Str("Git Commit", version.GitCommit).
+		Str("Version", version.Version).
+		Str("GitCommit", version.GitCommit).
 		Str("Built", version.BuildDate).
 		Msg("fm-ctl")
 

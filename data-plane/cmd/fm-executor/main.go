@@ -10,10 +10,10 @@ func main() {
 	logger := logging.New()
 
 	logger.Info().
-		Str("Verison", version.Version).
-		Str("Git Commit", version.GitCommit).
+		Str("Version", version.Version).
+		Str("GitCommit", version.GitCommit).
 		Str("Built", version.BuildDate).
-		Msg("fm-ctl")
+		Msg("fm-executor")
 
 	// pause until shutdown.
 	ctx, stop := signals.Context()

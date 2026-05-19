@@ -1,3 +1,63 @@
 [tools]
 go = "latest"
 buf = "latest"
+helm = "latest"
+kind = "latest"
+kubectl = "latest"
+
+[env]
+KIND_CLUSTER = "faultmesh"
+IMAGE_TAG = "dev"
+CMDS = "fm-agent fm-operator fm-executor fm-ctl"
+
+[tasks.images]
+description = "Build all four data-plane container images"
+dir = "{{config_root}}/data-plane"
+run = '''
+for c in $CMDS; do
+  docker build --build-arg CMD=$c -t faultmesh/$c:$IMAGE_TAG . || exit 1
+done
+'''
+
+[tasks.cluster-up]
+description = "Create the kind cluster if it doesn't exist"
+run = '''
+if ! kind get clusters | grep -qx "$KIND_CLUSTER"; then
+  kind create cluster --name "$KIND_CLUSTER"
+fi
+'''
+
+[tasks.load]
+description = "Load images into the kind cluster"
+depends = ["images", "cluster-up"]
+run = '''
+for c in $CMDS; do
+  kind load docker-image faultmesh/$c:$IMAGE_TAG --name "$KIND_CLUSTER" || exit 1
+done
+'''
+
+[tasks.install]
+description = "Install/upgrade the faultmesh Helm chart"
+dir = "{{config_root}}/data-plane"
+depends = ["load"]
+run = "helm upgrade --install fm deploy/helm/faultmesh --namespace faultmesh --create-namespace --wait"
+
+[tasks.up]
+description = "Full dev loop: build images, create cluster, load, install"
+depends = ["install"]
+run = "kubectl -n faultmesh get pods"
+
+[tasks.down]
+description = "Uninstall the chart and delete the kind cluster"
+run = '''
+helm -n faultmesh uninstall fm --ignore-not-found || true
+kind delete cluster --name "$KIND_CLUSTER" || true
+'''
+
+[tasks.status]
+description = "Show pod status in the faultmesh namespace"
+run = "kubectl -n faultmesh get pods -o wide"
+
+[tasks.logs-agent]
+description = "Tail fm-agent logs"
+run = "kubectl -n faultmesh logs -l app.kubernetes.io/component=agent --tail=50 -f"

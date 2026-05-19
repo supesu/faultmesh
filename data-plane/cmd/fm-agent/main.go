@@ -1,11 +1,10 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"fmt"
+	"net"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/supesu/faultmesh/data-plane/pkg/logging"
 	"github.com/supesu/faultmesh/data-plane/pkg/signals"
@@ -34,36 +33,43 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(
-		ctx,
-		*controlAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
-
+	host, port, err := net.SplitHostPort(*controlAddr)
 	if err != nil {
-		logger.Error().Err(err).
-			Str("addr", *controlAddr).
-			Msg("failed to connect to control plane")
+		logger.Error().Err(err).Str("addr", *controlAddr).Msg("--control-addr must be host:port")
+		os.Exit(1)
+	}
+	if host == "" {
+		logger.Error().Str("addr", *controlAddr).Msg("--control-addr host is empty")
+		os.Exit(1)
+	}
+	if p, perr := strconv.Atoi(port); perr != nil || p <= 0 || p > 65535 {
+		logger.Error().Str("addr", *controlAddr).Msg("--control-addr port must be in 1..65535")
 		os.Exit(1)
 	}
 
-	client := pb.NewControlServiceClient(conn)
+	// lazy dial — the control plane may come up after us.
+	conn, err := grpc.NewClient(
+		*controlAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		logger.Error().Err(err).
+			Str("addr", *controlAddr).
+			Msg("failed to create control plane client")
+		os.Exit(1)
+	}
+	defer conn.Close()
 
+	client := pb.NewControlServiceClient(conn)
 	_ = client // stub that jawn for now
 
 	logger.Info().
 		Str("addr", *controlAddr).
-		Msg("connected to control plane (stub)")
+		Msg("control plane client ready (lazy dial)")
 
-	// wait for shutdown
-	ctx2, stop := signals.Context()
+	ctx, stop := signals.Context()
 	defer stop()
+	<-ctx.Done()
 
-	<-ctx2.Done()
-
-	fmt.Println("shutdown complete")
+	logger.Info().Msg("shutdown complete")
 }

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "ctl") }}
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ctl
+spec:
+  replicas: {{ .Values.ctl.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: faultmesh
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: ctl
+  template:
+    metadata:
+      labels:
+        {{- include "faultmesh.labels" . | nindent 8 }}
+        app.kubernetes.io/component: ctl
+    spec:
+      containers:
+        - name: fm-ctl
+          image: {{ include "faultmesh.image" (dict "root" . "img" .Values.ctl.image) }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          resources:
+            {{- toYaml .Values.ctl.resources | nindent 12 }}

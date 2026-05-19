@@ -1,0 +1,6 @@
+apiVersion: v2
+name: faultmesh
+description: Faultmesh data-plane (agent, operator, executor, ctl)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

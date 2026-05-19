@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "operator") }}
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+spec:
+  replicas: {{ .Values.operator.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: faultmesh
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: operator
+  template:
+    metadata:
+      labels:
+        {{- include "faultmesh.labels" . | nindent 8 }}
+        app.kubernetes.io/component: operator
+    spec:
+      containers:
+        - name: fm-operator
+          image: {{ include "faultmesh.image" (dict "root" . "img" .Values.operator.image) }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          resources:
+            {{- toYaml .Values.operator.resources | nindent 12 }}

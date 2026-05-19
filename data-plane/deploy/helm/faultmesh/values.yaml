@@ -1,0 +1,31 @@
+imageRegistry: ""
+imagePullPolicy: IfNotPresent
+
+controlAddr: "faultmesh-control.faultmesh.svc.cluster.local:7777"
+
+agent:
+  image:
+    repository: faultmesh/fm-agent
+    tag: dev
+  resources: {}
+
+operator:
+  replicas: 1
+  image:
+    repository: faultmesh/fm-operator
+    tag: dev
+  resources: {}
+
+executor:
+  replicas: 1
+  image:
+    repository: faultmesh/fm-executor
+    tag: dev
+  resources: {}
+
+ctl:
+  replicas: 1
+  image:
+    repository: faultmesh/fm-ctl
+    tag: dev
+  resources: {}

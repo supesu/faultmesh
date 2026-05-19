@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "executor") }}
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: executor
+spec:
+  replicas: {{ .Values.executor.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: faultmesh
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: executor
+  template:
+    metadata:
+      labels:
+        {{- include "faultmesh.labels" . | nindent 8 }}
+        app.kubernetes.io/component: executor
+    spec:
+      containers:
+        - name: fm-executor
+          image: {{ include "faultmesh.image" (dict "root" . "img" .Values.executor.image) }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          resources:
+            {{- toYaml .Values.executor.resources | nindent 12 }}

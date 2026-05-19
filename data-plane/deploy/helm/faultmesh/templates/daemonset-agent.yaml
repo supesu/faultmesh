@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "agent") }}
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: faultmesh
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: agent
+  template:
+    metadata:
+      labels:
+        {{- include "faultmesh.labels" . | nindent 8 }}
+        app.kubernetes.io/component: agent
+    spec:
+      containers:
+        - name: fm-agent
+          image: {{ include "faultmesh.image" (dict "root" . "img" .Values.agent.image) }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          args:
+            - --control-addr={{ .Values.controlAddr }}
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
