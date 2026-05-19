@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package faultmesh.v1;
+
+option go_package = "faultmesh/data-plane/pkg/genproto/faultmesh/v1;faultmeshv1";
+
+service ControlService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string message = 1;
+}
