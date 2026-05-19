@@ -10,7 +10,7 @@ LDFLAGS := -X '$(MODULE)/pkg/version.Version=$(VERSION)' \
 CMDS := fm-agent fm-ctl fm-executor fm-operator
 BIN  := bin
 
-.PHONY: all build clean $(CMDS)
+.PHONY: all build clean test vet $(CMDS)
 
 all: build
 
@@ -18,6 +18,12 @@ build: $(CMDS)
 
 $(CMDS):
 	go build -ldflags="$(LDFLAGS)" -o $(BIN)/$@ ./cmd/$@
+
+test:
+	go test -race ./...
+
+vet:
+	go vet ./...
 
 clean:
 	rm -rf $(BIN)

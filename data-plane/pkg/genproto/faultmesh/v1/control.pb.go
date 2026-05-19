@@ -21,26 +21,33 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PingRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+type StreamRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Monotonic per-agent sequence assigned by the client. The server
+	// acks ranges via IngestAck.last_acked_offset.
+	Offset uint64 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*StreamRequest_Event
+	Payload       isStreamRequest_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PingRequest) Reset() {
-	*x = PingRequest{}
+func (x *StreamRequest) Reset() {
+	*x = StreamRequest{}
 	mi := &file_faultmesh_v1_control_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PingRequest) String() string {
+func (x *StreamRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PingRequest) ProtoMessage() {}
+func (*StreamRequest) ProtoMessage() {}
 
-func (x *PingRequest) ProtoReflect() protoreflect.Message {
+func (x *StreamRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_faultmesh_v1_control_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -52,32 +59,69 @@ func (x *PingRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
-func (*PingRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
+func (*StreamRequest) Descriptor() ([]byte, []int) {
 	return file_faultmesh_v1_control_proto_rawDescGZIP(), []int{0}
 }
 
-type PingResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+func (x *StreamRequest) GetOffset() uint64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *StreamRequest) GetPayload() isStreamRequest_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *StreamRequest) GetEvent() *Event {
+	if x != nil {
+		if x, ok := x.Payload.(*StreamRequest_Event); ok {
+			return x.Event
+		}
+	}
+	return nil
+}
+
+type isStreamRequest_Payload interface {
+	isStreamRequest_Payload()
+}
+
+type StreamRequest_Event struct {
+	Event *Event `protobuf:"bytes,10,opt,name=event,proto3,oneof"`
+}
+
+func (*StreamRequest_Event) isStreamRequest_Payload() {}
+
+type StreamResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*StreamResponse_IngestAck
+	//	*StreamResponse_Action
+	Payload       isStreamResponse_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PingResponse) Reset() {
-	*x = PingResponse{}
+func (x *StreamResponse) Reset() {
+	*x = StreamResponse{}
 	mi := &file_faultmesh_v1_control_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PingResponse) String() string {
+func (x *StreamResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PingResponse) ProtoMessage() {}
+func (*StreamResponse) ProtoMessage() {}
 
-func (x *PingResponse) ProtoReflect() protoreflect.Message {
+func (x *StreamResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_faultmesh_v1_control_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -89,28 +133,278 @@ func (x *PingResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PingResponse.ProtoReflect.Descriptor instead.
-func (*PingResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamResponse.ProtoReflect.Descriptor instead.
+func (*StreamResponse) Descriptor() ([]byte, []int) {
 	return file_faultmesh_v1_control_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PingResponse) GetMessage() string {
+func (x *StreamResponse) GetPayload() isStreamResponse_Payload {
 	if x != nil {
-		return x.Message
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *StreamResponse) GetIngestAck() *IngestAck {
+	if x != nil {
+		if x, ok := x.Payload.(*StreamResponse_IngestAck); ok {
+			return x.IngestAck
+		}
+	}
+	return nil
+}
+
+func (x *StreamResponse) GetAction() *ActionRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*StreamResponse_Action); ok {
+			return x.Action
+		}
+	}
+	return nil
+}
+
+type isStreamResponse_Payload interface {
+	isStreamResponse_Payload()
+}
+
+type StreamResponse_IngestAck struct {
+	IngestAck *IngestAck `protobuf:"bytes,1,opt,name=ingest_ack,json=ingestAck,proto3,oneof"`
+}
+
+type StreamResponse_Action struct {
+	Action *ActionRequest `protobuf:"bytes,2,opt,name=action,proto3,oneof"`
+}
+
+func (*StreamResponse_IngestAck) isStreamResponse_Payload() {}
+
+func (*StreamResponse_Action) isStreamResponse_Payload() {}
+
+type IngestAck struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Highest contiguous offset acked. The agent prunes its in-flight
+	// AckBuffer up to and including this value.
+	LastAckedOffset uint64 `protobuf:"varint,1,opt,name=last_acked_offset,json=lastAckedOffset,proto3" json:"last_acked_offset,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *IngestAck) Reset() {
+	*x = IngestAck{}
+	mi := &file_faultmesh_v1_control_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IngestAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IngestAck) ProtoMessage() {}
+
+func (x *IngestAck) ProtoReflect() protoreflect.Message {
+	mi := &file_faultmesh_v1_control_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IngestAck.ProtoReflect.Descriptor instead.
+func (*IngestAck) Descriptor() ([]byte, []int) {
+	return file_faultmesh_v1_control_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *IngestAck) GetLastAckedOffset() uint64 {
+	if x != nil {
+		return x.LastAckedOffset
+	}
+	return 0
+}
+
+// Placeholder; M4 fills this in with the workflow capability payload.
+type ActionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActionId      string                 `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActionRequest) Reset() {
+	*x = ActionRequest{}
+	mi := &file_faultmesh_v1_control_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActionRequest) ProtoMessage() {}
+
+func (x *ActionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_faultmesh_v1_control_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActionRequest.ProtoReflect.Descriptor instead.
+func (*ActionRequest) Descriptor() ([]byte, []int) {
+	return file_faultmesh_v1_control_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ActionRequest) GetActionId() string {
+	if x != nil {
+		return x.ActionId
 	}
 	return ""
+}
+
+type TailRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Empty matches everything; non-empty pins the subscription.
+	Tenant        string `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
+	AgentId       string `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TailRequest) Reset() {
+	*x = TailRequest{}
+	mi := &file_faultmesh_v1_control_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TailRequest) ProtoMessage() {}
+
+func (x *TailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_faultmesh_v1_control_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TailRequest.ProtoReflect.Descriptor instead.
+func (*TailRequest) Descriptor() ([]byte, []int) {
+	return file_faultmesh_v1_control_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *TailRequest) GetTenant() string {
+	if x != nil {
+		return x.Tenant
+	}
+	return ""
+}
+
+func (x *TailRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type TailEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Offset        uint64                 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
+	Event         *Event                 `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TailEvent) Reset() {
+	*x = TailEvent{}
+	mi := &file_faultmesh_v1_control_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TailEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TailEvent) ProtoMessage() {}
+
+func (x *TailEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_faultmesh_v1_control_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TailEvent.ProtoReflect.Descriptor instead.
+func (*TailEvent) Descriptor() ([]byte, []int) {
+	return file_faultmesh_v1_control_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TailEvent) GetOffset() uint64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *TailEvent) GetEvent() *Event {
+	if x != nil {
+		return x.Event
+	}
+	return nil
 }
 
 var File_faultmesh_v1_control_proto protoreflect.FileDescriptor
 
 const file_faultmesh_v1_control_proto_rawDesc = "" +
 	"\n" +
-	"\x1afaultmesh/v1/control.proto\x12\ffaultmesh.v1\"\r\n" +
-	"\vPingRequest\"(\n" +
-	"\fPingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2O\n" +
-	"\x0eControlService\x12=\n" +
-	"\x04Ping\x12\x19.faultmesh.v1.PingRequest\x1a\x1a.faultmesh.v1.PingResponseB<Z:faultmesh/data-plane/pkg/genproto/faultmesh/v1;faultmeshv1b\x06proto3"
+	"\x1afaultmesh/v1/control.proto\x12\ffaultmesh.v1\x1a\x1cfaultmesh/v1/telemetry.proto\"_\n" +
+	"\rStreamRequest\x12\x16\n" +
+	"\x06offset\x18\x01 \x01(\x04R\x06offset\x12+\n" +
+	"\x05event\x18\n" +
+	" \x01(\v2\x13.faultmesh.v1.EventH\x00R\x05eventB\t\n" +
+	"\apayload\"\x8c\x01\n" +
+	"\x0eStreamResponse\x128\n" +
+	"\n" +
+	"ingest_ack\x18\x01 \x01(\v2\x17.faultmesh.v1.IngestAckH\x00R\tingestAck\x125\n" +
+	"\x06action\x18\x02 \x01(\v2\x1b.faultmesh.v1.ActionRequestH\x00R\x06actionB\t\n" +
+	"\apayload\"7\n" +
+	"\tIngestAck\x12*\n" +
+	"\x11last_acked_offset\x18\x01 \x01(\x04R\x0flastAckedOffset\",\n" +
+	"\rActionRequest\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\"@\n" +
+	"\vTailRequest\x12\x16\n" +
+	"\x06tenant\x18\x01 \x01(\tR\x06tenant\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"N\n" +
+	"\tTailEvent\x12\x16\n" +
+	"\x06offset\x18\x01 \x01(\x04R\x06offset\x12)\n" +
+	"\x05event\x18\x02 \x01(\v2\x13.faultmesh.v1.EventR\x05event2^\n" +
+	"\x13AgentControlService\x12G\n" +
+	"\x06Stream\x12\x1b.faultmesh.v1.StreamRequest\x1a\x1c.faultmesh.v1.StreamResponse(\x010\x012R\n" +
+	"\fDebugService\x12B\n" +
+	"\n" +
+	"TailEvents\x12\x19.faultmesh.v1.TailRequest\x1a\x17.faultmesh.v1.TailEvent0\x01B<Z:faultmesh/data-plane/pkg/genproto/faultmesh/v1;faultmeshv1b\x06proto3"
 
 var (
 	file_faultmesh_v1_control_proto_rawDescOnce sync.Once
@@ -124,19 +418,30 @@ func file_faultmesh_v1_control_proto_rawDescGZIP() []byte {
 	return file_faultmesh_v1_control_proto_rawDescData
 }
 
-var file_faultmesh_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_faultmesh_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_faultmesh_v1_control_proto_goTypes = []any{
-	(*PingRequest)(nil),  // 0: faultmesh.v1.PingRequest
-	(*PingResponse)(nil), // 1: faultmesh.v1.PingResponse
+	(*StreamRequest)(nil),  // 0: faultmesh.v1.StreamRequest
+	(*StreamResponse)(nil), // 1: faultmesh.v1.StreamResponse
+	(*IngestAck)(nil),      // 2: faultmesh.v1.IngestAck
+	(*ActionRequest)(nil),  // 3: faultmesh.v1.ActionRequest
+	(*TailRequest)(nil),    // 4: faultmesh.v1.TailRequest
+	(*TailEvent)(nil),      // 5: faultmesh.v1.TailEvent
+	(*Event)(nil),          // 6: faultmesh.v1.Event
 }
 var file_faultmesh_v1_control_proto_depIdxs = []int32{
-	0, // 0: faultmesh.v1.ControlService.Ping:input_type -> faultmesh.v1.PingRequest
-	1, // 1: faultmesh.v1.ControlService.Ping:output_type -> faultmesh.v1.PingResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	6, // 0: faultmesh.v1.StreamRequest.event:type_name -> faultmesh.v1.Event
+	2, // 1: faultmesh.v1.StreamResponse.ingest_ack:type_name -> faultmesh.v1.IngestAck
+	3, // 2: faultmesh.v1.StreamResponse.action:type_name -> faultmesh.v1.ActionRequest
+	6, // 3: faultmesh.v1.TailEvent.event:type_name -> faultmesh.v1.Event
+	0, // 4: faultmesh.v1.AgentControlService.Stream:input_type -> faultmesh.v1.StreamRequest
+	4, // 5: faultmesh.v1.DebugService.TailEvents:input_type -> faultmesh.v1.TailRequest
+	1, // 6: faultmesh.v1.AgentControlService.Stream:output_type -> faultmesh.v1.StreamResponse
+	5, // 7: faultmesh.v1.DebugService.TailEvents:output_type -> faultmesh.v1.TailEvent
+	6, // [6:8] is the sub-list for method output_type
+	4, // [4:6] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_faultmesh_v1_control_proto_init() }
@@ -144,15 +449,23 @@ func file_faultmesh_v1_control_proto_init() {
 	if File_faultmesh_v1_control_proto != nil {
 		return
 	}
+	file_faultmesh_v1_telemetry_proto_init()
+	file_faultmesh_v1_control_proto_msgTypes[0].OneofWrappers = []any{
+		(*StreamRequest_Event)(nil),
+	}
+	file_faultmesh_v1_control_proto_msgTypes[1].OneofWrappers = []any{
+		(*StreamResponse_IngestAck)(nil),
+		(*StreamResponse_Action)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_faultmesh_v1_control_proto_rawDesc), len(file_faultmesh_v1_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   6,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_faultmesh_v1_control_proto_goTypes,
 		DependencyIndexes: file_faultmesh_v1_control_proto_depIdxs,

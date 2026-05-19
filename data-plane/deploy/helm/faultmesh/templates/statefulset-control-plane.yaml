@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-plane
+spec:
+  serviceName: {{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}
+  replicas: {{ .Values.controlPlane.replicas }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: faultmesh
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: control-plane
+  template:
+    metadata:
+      labels:
+        {{- include "faultmesh.labels" . | nindent 8 }}
+        app.kubernetes.io/component: control-plane
+    spec:
+      serviceAccountName: fm-control-plane
+      {{- if .Values.spire.enabled }}
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 999
+        fsGroup: 999
+      initContainers:
+        - name: spiffe-helper-init
+          image: ghcr.io/spiffe/spiffe-helper:0.10.1
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          args: ["-config", "/etc/spiffe-helper/helper.conf", "-daemon-mode=false"]
+          volumeMounts:
+            {{- include "faultmesh.spiffe.volumeMount" . | nindent 12 }}
+            - name: svid
+              mountPath: /run/spire
+            - name: spiffe-helper-config
+              mountPath: /etc/spiffe-helper
+              readOnly: true
+      {{- end }}
+      containers:
+        - name: control-plane
+          image: {{ include "faultmesh.image" (dict "root" . "img" .Values.controlPlane.image) }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: 9100
+            - name: grpc
+              containerPort: 7777
+            - name: debug-grpc
+              containerPort: 7778
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}-cookie
+                  key: cookie
+                  optional: true
+            {{- if .Values.spire.enabled }}
+            - name: FAULTMESH_TRUST_DOMAIN
+              value: {{ .Values.spire.trustDomain }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          volumeMounts:
+            - name: wal
+              mountPath: /var/lib/faultmesh
+            {{- if or .Values.spire.enabled .Values.mtls.enabled }}
+            - name: svid
+              mountPath: /run/spire
+              {{- if .Values.mtls.enabled }}
+              readOnly: true
+              {{- end }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.controlPlane.resources | nindent 12 }}
+        {{- if .Values.spire.enabled }}
+        - name: spiffe-helper
+          image: ghcr.io/spiffe/spiffe-helper:0.10.1
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          args: ["-config", "/etc/spiffe-helper/helper.conf"]
+          volumeMounts:
+            {{- include "faultmesh.spiffe.volumeMount" . | nindent 12 }}
+            - name: svid
+              mountPath: /run/spire
+            - name: spiffe-helper-config
+              mountPath: /etc/spiffe-helper
+              readOnly: true
+        {{- end }}
+      {{- if or .Values.spire.enabled .Values.mtls.enabled }}
+      volumes:
+        {{- if .Values.spire.enabled }}
+        - name: svid
+          emptyDir:
+            medium: Memory
+        - name: spiffe-helper-config
+          configMap:
+            name: {{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}-spiffe-helper
+        {{- include "faultmesh.spiffe.volume" . | nindent 8 }}
+        {{- else }}
+        - name: svid
+          projected:
+            sources:
+              - secret:
+                  name: {{ include "faultmesh.componentName" (dict "root" . "component" "svid") }}
+                  items:
+                    - key: server-svid.pem
+                      path: svid.pem
+                    - key: server-svid.key
+                      path: svid.key
+                    - key: bundle.pem
+                      path: bundle.pem
+        {{- end }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: wal
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.controlPlane.persistence.size }}
+        {{- with .Values.controlPlane.persistence.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}

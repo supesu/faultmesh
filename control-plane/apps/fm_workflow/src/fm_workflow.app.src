@@ -1,0 +1,13 @@
+{application, fm_workflow, [
+    {description, "Workflow DAG executor, journal, signing"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_workflow_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common
+    ]},
+    {env, []},
+    {modules, []}
+]}.

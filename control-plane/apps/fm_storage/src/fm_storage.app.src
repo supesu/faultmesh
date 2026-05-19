@@ -1,0 +1,13 @@
+{application, fm_storage, [
+    {description, "Mnesia schema + WAL + S3 offload"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_storage_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common
+    ]},
+    {env, []},
+    {modules, []}
+]}.

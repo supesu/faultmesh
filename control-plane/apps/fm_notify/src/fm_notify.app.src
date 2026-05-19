@@ -1,0 +1,13 @@
+{application, fm_notify, [
+    {description, "Slack/webhook/pagerduty notifier pools"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_notify_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common
+    ]},
+    {env, []},
+    {modules, []}
+]}.

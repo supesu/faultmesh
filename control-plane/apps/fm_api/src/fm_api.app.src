@@ -1,0 +1,20 @@
+{application, fm_api, [
+    {description, "Phoenix LiveView UI, REST + gRPC gateway"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_api_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common,
+        fm_proto,
+        fm_ingest,
+        grpcbox,
+        telemetry
+    ]},
+    {env, [
+        {grpc_port, 7778},
+        {grpc_ip,   "0.0.0.0"}
+    ]},
+    {modules, []}
+]}.

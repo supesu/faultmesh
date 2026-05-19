@@ -4,6 +4,8 @@ buf = "latest"
 helm = "latest"
 kind = "latest"
 kubectl = "latest"
+erlang = "27"
+rebar = "3.23.0"
 
 [env]
 KIND_CLUSTER = "faultmesh"
@@ -11,12 +13,13 @@ IMAGE_TAG = "dev"
 CMDS = "fm-agent fm-operator fm-executor fm-ctl"
 
 [tasks.images]
-description = "Build all four data-plane container images"
-dir = "{{config_root}}/data-plane"
+description = "Build the four data-plane images plus the Erlang control-plane image"
+dir = "{{config_root}}"
 run = '''
 for c in $CMDS; do
-  docker build --build-arg CMD=$c -t faultmesh/$c:$IMAGE_TAG . || exit 1
+  docker build --build-arg CMD=$c -t faultmesh/$c:$IMAGE_TAG -f data-plane/Dockerfile data-plane || exit 1
 done
+docker build -t faultmesh/control-plane:$IMAGE_TAG -f control-plane/Dockerfile . || exit 1
 '''
 
 [tasks.cluster-up]
@@ -34,12 +37,25 @@ run = '''
 for c in $CMDS; do
   kind load docker-image faultmesh/$c:$IMAGE_TAG --name "$KIND_CLUSTER" || exit 1
 done
+kind load docker-image faultmesh/control-plane:$IMAGE_TAG --name "$KIND_CLUSTER" || exit 1
+'''
+
+[tasks.deps]
+description = "Fetch Helm dependencies (SPIRE subchart + spire-crds release)"
+dir = "{{config_root}}/data-plane/deploy/helm/faultmesh"
+run = '''
+helm repo add spiffe https://spiffe.github.io/helm-charts-hardened 2>/dev/null || true
+helm repo update spiffe
+helm dependency build .
+kubectl create namespace spire-system 2>/dev/null || true
+kubectl create namespace spire-server 2>/dev/null || true
+helm upgrade --install spire-crds spiffe/spire-crds --namespace spire-system
 '''
 
 [tasks.install]
 description = "Install/upgrade the faultmesh Helm chart"
 dir = "{{config_root}}/data-plane"
-depends = ["load"]
+depends = ["load", "deps"]
 run = "helm upgrade --install fm deploy/helm/faultmesh --namespace faultmesh --create-namespace --wait"
 
 [tasks.up]

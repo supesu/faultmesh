@@ -1,0 +1,23 @@
+{{- if .Values.spire.enabled }}
+{{- $tdomain := .Values.spire.trustDomain -}}
+{{- $ns := .Release.Namespace -}}
+{{- $className := printf "%s-%s" .Chart.Name .Release.Name -}}
+{{- range list "fm-agent" "fm-control-plane" "fm-ctl" "fm-executor" "fm-operator" }}
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: faultmesh-{{ . }}
+spec:
+  className: {{ $className }}
+  spiffeIDTemplate: "spiffe://{{ $tdomain }}/ns/{{ "{{ .PodMeta.Namespace }}" }}/sa/{{ "{{ .PodSpec.ServiceAccountName }}" }}"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: faultmesh
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: {{ $ns }}
+  workloadSelectorTemplates:
+    - "k8s:sa:{{ . }}"
+---
+{{- end }}
+{{- end }}

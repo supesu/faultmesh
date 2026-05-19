@@ -2,5 +2,11 @@ apiVersion: v2
 name: faultmesh
 description: Faultmesh data-plane (agent, operator, executor, ctl)
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.2.0
+appVersion: "0.2.0"
+
+dependencies:
+  - name: spire
+    version: "0.24.x"
+    repository: https://spiffe.github.io/helm-charts-hardened
+    condition: spire.enabled

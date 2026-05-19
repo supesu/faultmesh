@@ -19,103 +19,222 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ControlService_Ping_FullMethodName = "/faultmesh.v1.ControlService/Ping"
+	AgentControlService_Stream_FullMethodName = "/faultmesh.v1.AgentControlService/Stream"
 )
 
-// ControlServiceClient is the client API for ControlService service.
+// AgentControlServiceClient is the client API for AgentControlService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ControlServiceClient interface {
-	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+//
+// AgentControlService is the single bidirectional channel between fm-agent
+// and the control plane. StreamRequests carry telemetry egress;
+// StreamResponses carry ingest acks and action requests.
+type AgentControlServiceClient interface {
+	Stream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StreamRequest, StreamResponse], error)
 }
 
-type controlServiceClient struct {
+type agentControlServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewControlServiceClient(cc grpc.ClientConnInterface) ControlServiceClient {
-	return &controlServiceClient{cc}
+func NewAgentControlServiceClient(cc grpc.ClientConnInterface) AgentControlServiceClient {
+	return &agentControlServiceClient{cc}
 }
 
-func (c *controlServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+func (c *agentControlServiceClient) Stream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StreamRequest, StreamResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PingResponse)
-	err := c.cc.Invoke(ctx, ControlService_Ping_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &AgentControlService_ServiceDesc.Streams[0], AgentControlService_Stream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[StreamRequest, StreamResponse]{ClientStream: stream}
+	return x, nil
 }
 
-// ControlServiceServer is the server API for ControlService service.
-// All implementations must embed UnimplementedControlServiceServer
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentControlService_StreamClient = grpc.BidiStreamingClient[StreamRequest, StreamResponse]
+
+// AgentControlServiceServer is the server API for AgentControlService service.
+// All implementations must embed UnimplementedAgentControlServiceServer
 // for forward compatibility.
-type ControlServiceServer interface {
-	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	mustEmbedUnimplementedControlServiceServer()
+//
+// AgentControlService is the single bidirectional channel between fm-agent
+// and the control plane. StreamRequests carry telemetry egress;
+// StreamResponses carry ingest acks and action requests.
+type AgentControlServiceServer interface {
+	Stream(grpc.BidiStreamingServer[StreamRequest, StreamResponse]) error
+	mustEmbedUnimplementedAgentControlServiceServer()
 }
 
-// UnimplementedControlServiceServer must be embedded to have
+// UnimplementedAgentControlServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedControlServiceServer struct{}
+type UnimplementedAgentControlServiceServer struct{}
 
-func (UnimplementedControlServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
+func (UnimplementedAgentControlServiceServer) Stream(grpc.BidiStreamingServer[StreamRequest, StreamResponse]) error {
+	return status.Error(codes.Unimplemented, "method Stream not implemented")
 }
-func (UnimplementedControlServiceServer) mustEmbedUnimplementedControlServiceServer() {}
-func (UnimplementedControlServiceServer) testEmbeddedByValue()                        {}
+func (UnimplementedAgentControlServiceServer) mustEmbedUnimplementedAgentControlServiceServer() {}
+func (UnimplementedAgentControlServiceServer) testEmbeddedByValue()                             {}
 
-// UnsafeControlServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ControlServiceServer will
+// UnsafeAgentControlServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AgentControlServiceServer will
 // result in compilation errors.
-type UnsafeControlServiceServer interface {
-	mustEmbedUnimplementedControlServiceServer()
+type UnsafeAgentControlServiceServer interface {
+	mustEmbedUnimplementedAgentControlServiceServer()
 }
 
-func RegisterControlServiceServer(s grpc.ServiceRegistrar, srv ControlServiceServer) {
-	// If the following call panics, it indicates UnimplementedControlServiceServer was
+func RegisterAgentControlServiceServer(s grpc.ServiceRegistrar, srv AgentControlServiceServer) {
+	// If the following call panics, it indicates UnimplementedAgentControlServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&ControlService_ServiceDesc, srv)
+	s.RegisterService(&AgentControlService_ServiceDesc, srv)
 }
 
-func _ControlService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ControlServiceServer).Ping(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ControlService_Ping_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlServiceServer).Ping(ctx, req.(*PingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func _AgentControlService_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentControlServiceServer).Stream(&grpc.GenericServerStream[StreamRequest, StreamResponse]{ServerStream: stream})
 }
 
-// ControlService_ServiceDesc is the grpc.ServiceDesc for ControlService service.
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentControlService_StreamServer = grpc.BidiStreamingServer[StreamRequest, StreamResponse]
+
+// AgentControlService_ServiceDesc is the grpc.ServiceDesc for AgentControlService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ControlService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "faultmesh.v1.ControlService",
-	HandlerType: (*ControlServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+var AgentControlService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "faultmesh.v1.AgentControlService",
+	HandlerType: (*AgentControlServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Ping",
-			Handler:    _ControlService_Ping_Handler,
+			StreamName:    "Stream",
+			Handler:       _AgentControlService_Stream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Metadata: "faultmesh/v1/control.proto",
+}
+
+const (
+	DebugService_TailEvents_FullMethodName = "/faultmesh.v1.DebugService/TailEvents"
+)
+
+// DebugServiceClient is the client API for DebugService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// DebugService exposes operator-only inspection endpoints. Intended for
+// fm-ctl and local development; not for fm-agent traffic.
+type DebugServiceClient interface {
+	// Server-stream every Event (after ingest normalization) matching the
+	// tenant/agent filter on the control-plane node this RPC is connected
+	// to. Cross-node fanout lands with partisan distribution in M7.
+	TailEvents(ctx context.Context, in *TailRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TailEvent], error)
+}
+
+type debugServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDebugServiceClient(cc grpc.ClientConnInterface) DebugServiceClient {
+	return &debugServiceClient{cc}
+}
+
+func (c *debugServiceClient) TailEvents(ctx context.Context, in *TailRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TailEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DebugService_ServiceDesc.Streams[0], DebugService_TailEvents_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[TailRequest, TailEvent]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DebugService_TailEventsClient = grpc.ServerStreamingClient[TailEvent]
+
+// DebugServiceServer is the server API for DebugService service.
+// All implementations must embed UnimplementedDebugServiceServer
+// for forward compatibility.
+//
+// DebugService exposes operator-only inspection endpoints. Intended for
+// fm-ctl and local development; not for fm-agent traffic.
+type DebugServiceServer interface {
+	// Server-stream every Event (after ingest normalization) matching the
+	// tenant/agent filter on the control-plane node this RPC is connected
+	// to. Cross-node fanout lands with partisan distribution in M7.
+	TailEvents(*TailRequest, grpc.ServerStreamingServer[TailEvent]) error
+	mustEmbedUnimplementedDebugServiceServer()
+}
+
+// UnimplementedDebugServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedDebugServiceServer struct{}
+
+func (UnimplementedDebugServiceServer) TailEvents(*TailRequest, grpc.ServerStreamingServer[TailEvent]) error {
+	return status.Error(codes.Unimplemented, "method TailEvents not implemented")
+}
+func (UnimplementedDebugServiceServer) mustEmbedUnimplementedDebugServiceServer() {}
+func (UnimplementedDebugServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafeDebugServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DebugServiceServer will
+// result in compilation errors.
+type UnsafeDebugServiceServer interface {
+	mustEmbedUnimplementedDebugServiceServer()
+}
+
+func RegisterDebugServiceServer(s grpc.ServiceRegistrar, srv DebugServiceServer) {
+	// If the following call panics, it indicates UnimplementedDebugServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&DebugService_ServiceDesc, srv)
+}
+
+func _DebugService_TailEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(TailRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DebugServiceServer).TailEvents(m, &grpc.GenericServerStream[TailRequest, TailEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DebugService_TailEventsServer = grpc.ServerStreamingServer[TailEvent]
+
+// DebugService_ServiceDesc is the grpc.ServiceDesc for DebugService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DebugService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "faultmesh.v1.DebugService",
+	HandlerType: (*DebugServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "TailEvents",
+			Handler:       _DebugService_TailEvents_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "faultmesh/v1/control.proto",
 }

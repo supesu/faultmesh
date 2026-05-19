@@ -1,0 +1,13 @@
+{application, fm_incident, [
+    {description, "Incident correlator and per-incident FSMs"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_incident_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common
+    ]},
+    {env, []},
+    {modules, []}
+]}.

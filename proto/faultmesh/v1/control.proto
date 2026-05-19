@@ -2,14 +2,47 @@ syntax = "proto3";
 
 package faultmesh.v1;
 
+import "faultmesh/v1/telemetry.proto";
+
 option go_package = "faultmesh/data-plane/pkg/genproto/faultmesh/v1;faultmeshv1";
 
-service ControlService {
-  rpc Ping(PingRequest) returns (PingResponse);
+service AgentControlService {
+  rpc Stream(stream StreamRequest) returns (stream StreamResponse);
 }
 
-message PingRequest {}
+message StreamRequest {
+  uint64 offset = 1;
 
-message PingResponse {
-  string message = 1;
+  oneof payload {
+    Event event = 10;
+  }
+}
+
+message StreamResponse {
+  oneof payload {
+    IngestAck ingest_ack = 1;
+    ActionRequest action = 2;
+  }
+}
+
+message IngestAck {
+  uint64 last_acked_offset = 1;
+}
+
+message ActionRequest {
+  string action_id = 1;
+}
+
+service DebugService {
+  rpc TailEvents(TailRequest) returns (stream TailEvent);
+}
+
+message TailRequest {
+  string tenant = 1;
+  string agent_id = 2;
+}
+
+message TailEvent {
+  uint64 offset = 1;
+  Event event = 2;
 }

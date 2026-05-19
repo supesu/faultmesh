@@ -1,0 +1,28 @@
+{application, fm_ingest, [
+    {description, "Agent gRPC ingest, partitioning, WAL"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_ingest_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common,
+        fm_proto,
+        gproc,
+        grpcbox
+    ]},
+    {env, [
+        {dev_mode, true},
+        {grpc_port, 7777},
+        {grpc_ip,   "0.0.0.0"},
+        {partition_count, 64},
+        {credit_window, 1024},
+        {wal_dir, "/var/lib/faultmesh/wal"},
+        {spire_enabled, false},
+        {trust_domain, <<"faultmesh.local">>},
+        {svid_cert_path,   "/run/spire/svid.pem"},
+        {svid_key_path,    "/run/spire/svid.key"},
+        {svid_bundle_path, "/run/spire/bundle.pem"}
+    ]},
+    {modules, []}
+]}.

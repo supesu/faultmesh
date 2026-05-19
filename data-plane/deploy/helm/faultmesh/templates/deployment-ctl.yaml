@@ -18,9 +18,29 @@ spec:
         {{- include "faultmesh.labels" . | nindent 8 }}
         app.kubernetes.io/component: ctl
     spec:
+      serviceAccountName: fm-ctl
       containers:
         - name: fm-ctl
           image: {{ include "faultmesh.image" (dict "root" . "img" .Values.ctl.image) }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          args:
+            - tail
+            - events
+            - --control-addr={{ .Values.controlAddr | replace ":7777" ":7778" }}
+            {{- if .Values.spire.enabled }}
+            - --spiffe-socket={{ .Values.spiffe.socketPath }}
+            - --server-spiffe-id={{ include "faultmesh.spiffe.serverID" . }}
+            {{- end }}
+          {{- if .Values.spire.enabled }}
+          volumeMounts:
+            {{- include "faultmesh.spiffe.volumeMount" . | nindent 12 }}
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix://{{ .Values.spiffe.socketPath }}
+          {{- end }}
           resources:
             {{- toYaml .Values.ctl.resources | nindent 12 }}
+      {{- if .Values.spire.enabled }}
+      volumes:
+        {{- include "faultmesh.spiffe.volume" . | nindent 8 }}
+      {{- end }}

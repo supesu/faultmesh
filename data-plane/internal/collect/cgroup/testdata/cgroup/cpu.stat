@@ -1,0 +1,6 @@
+usage_usec 12345
+user_usec 6000
+system_usec 6345
+nr_periods 0
+nr_throttled 0
+throttled_usec 0

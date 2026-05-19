@@ -1,0 +1,13 @@
+{application, fm_proto, [
+    {description, "Generated protobuf bindings (no processes)"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_proto_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common
+    ]},
+    {env, []},
+    {modules, []}
+]}.

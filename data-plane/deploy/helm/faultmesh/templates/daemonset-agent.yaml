@@ -17,11 +17,50 @@ spec:
         {{- include "faultmesh.labels" . | nindent 8 }}
         app.kubernetes.io/component: agent
     spec:
+      serviceAccountName: fm-agent
       containers:
         - name: fm-agent
           image: {{ include "faultmesh.image" (dict "root" . "img" .Values.agent.image) }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           args:
             - --control-addr={{ .Values.controlAddr }}
+            {{- if .Values.spire.enabled }}
+            - --spiffe-socket={{ .Values.spiffe.socketPath }}
+            - --server-spiffe-id={{ include "faultmesh.spiffe.serverID" . }}
+            {{- else if .Values.mtls.enabled }}
+            - --tls-cert=/run/spire/svid.pem
+            - --tls-key=/run/spire/svid.key
+            - --tls-ca=/run/spire/bundle.pem
+            - --tls-server-name={{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}.{{ .Release.Namespace }}.svc.cluster.local
+            {{- end }}
+          {{- if or .Values.spire.enabled .Values.mtls.enabled }}
+          volumeMounts:
+            {{- if .Values.spire.enabled }}
+            {{- include "faultmesh.spiffe.volumeMount" . | nindent 12 }}
+            {{- else }}
+            - name: svid
+              mountPath: /run/spire
+              readOnly: true
+            {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.agent.resources | nindent 12 }}
+      {{- if or .Values.spire.enabled .Values.mtls.enabled }}
+      volumes:
+        {{- if .Values.spire.enabled }}
+        {{- include "faultmesh.spiffe.volume" . | nindent 8 }}
+        {{- else }}
+        - name: svid
+          projected:
+            sources:
+              - secret:
+                  name: {{ include "faultmesh.componentName" (dict "root" . "component" "svid") }}
+                  items:
+                    - key: client-svid.pem
+                      path: svid.pem
+                    - key: client-svid.key
+                      path: svid.key
+                    - key: bundle.pem
+                      path: bundle.pem
+        {{- end }}
+      {{- end }}

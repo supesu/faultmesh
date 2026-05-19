@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package faultmesh.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "faultmesh/data-plane/pkg/genproto/faultmesh/v1;faultmeshv1";
+
+message Event {
+  google.protobuf.Timestamp timestamp = 1;
+  string source = 2;
+  string agent_id = 3;
+
+  oneof payload {
+    MetricPoint metric = 10;
+  }
+}
+
+message MetricPoint {
+  string name = 1;
+  double value = 2;
+  map<string, string> labels = 3;
+}

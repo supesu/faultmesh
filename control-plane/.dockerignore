@@ -1,0 +1,6 @@
+_build/
+.rebar3/
+data-plane/
+**/*.beam
+.git/
+.github/

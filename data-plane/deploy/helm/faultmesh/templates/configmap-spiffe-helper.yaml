@@ -1,0 +1,19 @@
+{{- if .Values.spire.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}-spiffe-helper
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+data:
+  helper.conf: |
+    agent_address      = "{{ .Values.spiffe.socketPath }}"
+    cert_dir           = "/run/spire"
+    svid_file_name     = "svid.pem"
+    svid_key_file_name = "svid.key"
+    svid_bundle_file_name = "bundle.pem"
+    cmd                = ""
+    cmd_args           = ""
+    renew_signal       = ""
+    daemon_mode        = true
+{{- end }}

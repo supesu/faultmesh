@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "faultmesh.componentName" (dict "root" . "component" "control-plane") }}
+  labels:
+    {{- include "faultmesh.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control-plane
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: faultmesh
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: control-plane
+  ports:
+    - name: metrics
+      port: 9100
+      targetPort: metrics
+    - name: grpc
+      port: 7777
+      targetPort: grpc
+    - name: debug-grpc
+      port: 7778
+      targetPort: debug-grpc

@@ -1,22 +1,15 @@
 package main
 
 import (
+	"os"
+
+	"github.com/supesu/faultmesh/data-plane/cmd/fm-ctl/cmd"
 	"github.com/supesu/faultmesh/data-plane/pkg/logging"
-	"github.com/supesu/faultmesh/data-plane/pkg/signals"
-	"github.com/supesu/faultmesh/data-plane/pkg/version"
 )
 
 func main() {
 	logger := logging.New()
-
-	logger.Info().
-		Str("Version", version.Version).
-		Str("GitCommit", version.GitCommit).
-		Str("Built", version.BuildDate).
-		Msg("fm-ctl")
-
-	// pause until shutdown.
-	ctx, stop := signals.Context()
-	defer stop()
-	<-ctx.Done()
+	if err := cmd.NewRoot(logger).Execute(); err != nil {
+		os.Exit(1)
+	}
 }

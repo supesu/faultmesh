@@ -1,0 +1,13 @@
+{application, fm_detect, [
+    {description, "Detector registry and per-detector workers"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fm_detect_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        fm_common
+    ]},
+    {env, []},
+    {modules, []}
+]}.

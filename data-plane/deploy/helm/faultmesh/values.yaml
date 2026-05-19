@@ -1,7 +1,7 @@
 imageRegistry: ""
 imagePullPolicy: IfNotPresent
 
-controlAddr: "faultmesh-control.faultmesh.svc.cluster.local:7777"
+controlAddr: "fm-faultmesh-control-plane.faultmesh.svc.cluster.local:7777"
 
 agent:
   image:
@@ -29,3 +29,43 @@ ctl:
     repository: faultmesh/fm-ctl
     tag: dev
   resources: {}
+
+controlPlane:
+  replicas: 2
+  image:
+    repository: faultmesh/control-plane
+    tag: dev
+  resources: {}
+  persistence:
+    size: 4Gi
+    storageClassName: ""
+
+mtls:
+  enabled: false
+
+spire:
+  enabled: true
+  trustDomain: faultmesh.local
+  global:
+    spire:
+      clusterName: faultmesh
+      trustDomain: faultmesh.local
+      recommendations:
+        enabled: true
+  spire-server:
+    caSubject:
+      country: US
+      organization: Faultmesh
+      commonName: faultmesh-spire-ca
+    controllerManager:
+      identities:
+        clusterSPIFFEIDs:
+          default:
+            enabled: false
+  spiffe-csi-driver:
+    fullnameOverride: spiffe-csi-driver
+
+spiffe:
+  socketPath: /run/spire/agents/spire-agent.sock
+  serverID: "spiffe://faultmesh.local/ns/{{ .Release.Namespace }}/sa/fm-control-plane"
+  agentID:  "spiffe://faultmesh.local/ns/{{ .Release.Namespace }}/sa/fm-agent"
